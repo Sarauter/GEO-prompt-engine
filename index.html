@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEO Prompt Engine — SARAUTER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1a1a2e;
+  --navy-2:#28283c;
+  --purple-700:#32324a;
+  --purple-600:#3c3c58;
+  --purple-500:#4a4a6e;
+  --purple-400:#5e5e8a;
+  --lilac:#9494b8;
+  --lilac-2:#ababc8;
+  --lilac-light:#c8c8dc;
+  --lilac-lighter:#eaeaf4;
+  --bg:#f7f7fa;
+  --card:#ffffff;
+  --text:#1a1a2e;
+  --muted:#5a5a78;
+  --hint:#9898b0;
+  --border:rgba(40,40,60,0.1);
+  --success:#2f9e5b;
+  --success-bg:#e7f7ee;
+  --warning:#b9791f;
+  --warning-bg:#fbf0dd;
+  --danger:#c4493a;
+  --radius:14px;
+  --shadow:0 1px 6px rgba(28,28,44,.07), 0 4px 20px rgba(28,28,44,.08);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:'Sora',sans-serif;margin:0;}
+p{margin:0;}
+button{font-family:'DM Sans',sans-serif;cursor:pointer;}
+input,textarea,select{font-family:'DM Sans',sans-serif;font-size:14px;}
+
+/* ===== Topbar ===== */
+.topbar{
+  background:var(--navy-2);
+  color:#fff;
+  padding:0 28px;
+  height:60px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.wordmark{display:flex;align-items:center;gap:10px;}
+.wordmark img{height:28px;width:auto;display:block;}
+.topbar-divider{width:1px;height:22px;background:rgba(255,255,255,.12);margin:0 2px;}
+.wordmark .product{font-size:11.5px;color:rgba(255,255,255,.4);font-weight:400;text-transform:uppercase;letter-spacing:.06em;}
+.topbar-actions{display:flex;gap:8px;align-items:center;margin-left:auto;}
+.lang-toggle{display:flex;background:rgba(255,255,255,.08);border-radius:999px;padding:3px;}
+.lang-toggle button{
+  border:none;background:transparent;color:rgba(255,255,255,.55);
+  padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600;
+}
+.lang-toggle button.active{background:linear-gradient(135deg,var(--purple-600),var(--purple-500));color:#fff;}
+
+/* ===== Tabs ===== */
+.tabs-nav{
+  display:flex;gap:4px;padding:0 24px;background:var(--navy-2);
+  overflow-x:auto;
+}
+.tab-btn{
+  border:none;background:transparent;color:rgba(255,255,255,.55);
+  padding:13px 18px;font-size:13.5px;font-weight:600;border-bottom:3px solid transparent;
+  white-space:nowrap;
+}
+.tab-btn .num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.12);
+  font-size:10.5px;margin-right:7px;
+}
+.tab-btn.active{color:#fff;border-bottom-color:var(--lilac);}
+.tab-btn.active .num{background:var(--lilac);}
+
+.app{max-width:1180px;margin:0 auto;padding:26px 24px 80px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fade .25s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+.intro{margin-bottom:22px;}
+.intro h2{font-size:22px;font-weight:700;}
+.intro p{color:var(--muted);margin-top:6px;font-size:14px;max-width:680px;}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:22px;
+  margin-bottom:18px;
+}
+.card h3{font-size:15px;font-weight:700;margin-bottom:14px;}
+.card h3 .hint{display:block;font-family:'DM Sans',sans-serif;font-weight:400;color:var(--muted);font-size:12.5px;margin-top:3px;}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media (max-width:760px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.field .sub{color:var(--muted);font-weight:400;font-size:11.5px;}
+input[type=text],input[type=number],textarea,select{
+  width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;
+  background:#fbfaff;color:var(--text);
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--lilac);background:#fff;}
+textarea{resize:vertical;min-height:54px;}
+
+.chip-input-row{display:flex;gap:8px;}
+.chip-input-row input{flex:1;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+.chip{
+  background:var(--lilac-light);color:var(--navy-2);font-size:12.5px;font-weight:600;
+  padding:5px 10px 5px 12px;border-radius:999px;display:flex;align-items:center;gap:7px;
+}
+.chip button{background:none;border:none;color:var(--navy-2);opacity:.5;font-size:13px;line-height:1;padding:0;}
+.chip button:hover{opacity:1;}
+
+.btn{
+  border:none;border-radius:9px;padding:10px 16px;font-size:13.5px;font-weight:600;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.btn-primary{background:var(--navy);color:#fff;}
+.btn-primary:hover{background:var(--navy-2);}
+.btn-accent{background:linear-gradient(135deg,var(--purple-600),var(--purple-500));color:#fff;box-shadow:0 2px 10px rgba(90,45,158,.3);}
+.btn-accent:hover{background:linear-gradient(135deg,var(--purple-700),var(--purple-600));box-shadow:0 4px 16px rgba(90,45,158,.4);}
+.btn-ghost{background:#fff;border:1px solid var(--border);color:var(--text);}
+.btn-ghost:hover{border-color:var(--lilac);color:var(--lilac);}
+.btn-sm{padding:6px 11px;font-size:12px;}
+.btn-danger-ghost{background:#fff;border:1px solid #f0d7d3;color:var(--danger);}
+
+.row-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px;}
+.footer-nav{display:flex;justify-content:space-between;margin-top:8px;}
+
+/* persona / narrative cards */
+.entity-card{
+  border:1px solid var(--border);border-radius:11px;padding:14px 16px;margin-bottom:10px;
+  display:flex;justify-content:space-between;gap:14px;background:#fbfaff;
+}
+.entity-card .meta{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;}
+.entity-card .tag{
+  display:inline-block;background:var(--navy);color:#fff;font-size:10.5px;font-weight:700;
+  padding:2px 8px;border-radius:6px;margin-right:6px;letter-spacing:.3px;
+}
+.entity-card .importance{
+  display:inline-flex;gap:2px;margin-left:6px;
+}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--border);}
+.dot.on{background:var(--lilac);}
+.entity-card .del{background:none;border:none;color:var(--muted);font-size:18px;line-height:1;align-self:flex-start;}
+.entity-card .del:hover{color:var(--danger);}
+
+.empty{
+  text-align:center;color:var(--muted);font-size:13px;padding:30px 10px;border:1.5px dashed var(--border);border-radius:11px;
+}
+
+/* stats */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
+@media (max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr);}}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px 16px;}
+.stat .v{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:var(--navy);}
+.stat .l{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.toolbar-left{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.filter-chip{
+  border:1px solid var(--border);background:#fff;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;color:var(--muted);
+}
+.filter-chip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.toolbar-right{display:flex;gap:8px;}
+
+/* table */
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:#fff;}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:1100px;}
+th{
+  background:var(--bg);color:var(--muted);text-align:left;font-size:11px;text-transform:uppercase;
+  letter-spacing:.4px;font-weight:700;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafaff;}
+.cluster-badge{
+  font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;color:#fff;
+}
+td.prompt-cell{max-width:280px;}
+td.prompt-cell textarea{min-height:38px;font-size:12.5px;}
+.mini-select{width:64px;padding:5px 6px;font-size:12px;}
+.score-badge{
+  font-family:'Sora',sans-serif;font-weight:800;font-size:14px;display:inline-block;min-width:34px;text-align:center;
+}
+.score-tier{font-size:9.5px;font-weight:700;text-transform:uppercase;display:block;letter-spacing:.3px;}
+.tier-alta{color:var(--success);}
+.tier-media{color:var(--warning);}
+.tier-baja{color:var(--danger);}
+.evidence-cell{display:flex;align-items:center;gap:6px;font-size:12px;}
+.evidence-cell input{width:42px;padding:5px 4px;text-align:center;}
+.status-pill{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;}
+.status-complete{background:var(--success-bg);color:var(--success);}
+.status-pending{background:var(--warning-bg);color:var(--warning);}
+.narrative-select{min-width:140px;}
+.del-row{background:none;border:none;color:var(--muted);font-size:16px;}
+.del-row:hover{color:var(--danger);}
+
+.manual-form{display:none;margin-bottom:14px;}
+.manual-form.open{display:block;}
+
+footer.note{margin-top:30px;font-size:12px;color:var(--muted);text-align:center;}
+
+@media print{
+  .topbar,.tabs-nav,.toolbar,.btn,.del-row,.evidence-cell input,#manualPromptForm,.footer-nav{display:none !important;}
+  body{background:#fff;}
+  .app{padding:0;max-width:100%;}
+  .tab-panel{display:none !important;}
+  .tab-panel#tab-prompts{display:block !important;}
+  table{min-width:0;font-size:11px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wordmark">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAADICAYAAAAeGRPoAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAExmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSfvu78nIGlkPSdXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQnPz4KPHg6eG1wbWV0YSB4bWxuczp4PSdhZG9iZTpuczptZXRhLyc+CjxyZGY6UkRGIHhtbG5zOnJkZj0naHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyc+CgogPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9JycKICB4bWxuczpBdHRyaWI9J2h0dHA6Ly9ucy5hdHRyaWJ1dGlvbi5jb20vYWRzLzEuMC8nPgogIDxBdHRyaWI6QWRzPgogICA8cmRmOlNlcT4KICAgIDxyZGY6bGkgcmRmOnBhcnNlVHlwZT0nUmVzb3VyY2UnPgogICAgIDxBdHRyaWI6Q3JlYXRlZD4yMDI2LTAxLTAyPC9BdHRyaWI6Q3JlYXRlZD4KICAgICA8QXR0cmliOkV4dElkPjAyNDY5NWNiLWVkZDMtNDc0Ny04NjUyLWE5OTliMDUzOWE2NjwvQXR0cmliOkV4dElkPgogICAgIDxBdHRyaWI6RmJJZD41MjUyNjU5MTQxNzk1ODA8L0F0dHJpYjpGYklkPgogICAgIDxBdHRyaWI6VG91Y2hUeXBlPjI8L0F0dHJpYjpUb3VjaFR5cGU+CiAgICA8L3JkZjpsaT4KICAgPC9yZGY6U2VxPgogIDwvQXR0cmliOkFkcz4KIDwvcmRmOkRlc2NyaXB0aW9uPgoKIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PScnCiAgeG1sbnM6ZGM9J2h0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvJz4KICA8ZGM6dGl0bGU+CiAgIDxyZGY6QWx0PgogICAgPHJkZjpsaSB4bWw6bGFuZz0neC1kZWZhdWx0Jz5TYXJhdXRlciBMb2dvICg1MDAgeCAyMDAgcHgpIC0gMjwvcmRmOmxpPgogICA8L3JkZjpBbHQ+CiAgPC9kYzp0aXRsZT4KIDwvcmRmOkRlc2NyaXB0aW9uPgoKIDxy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" alt="SARAUTER">
+  </div>
+  <div class="topbar-divider"></div>
+  <span class="product">GEO Prompt Engine</span>
+  <div class="topbar-actions">
+    <div class="lang-toggle">
+      <button id="langEs" class="active" onclick="setLang('es')">ES</button>
+      <button id="langEn" onclick="setLang('en')">EN</button>
+    </div>
+  </div>
+</div>
+
+<div class="tabs-nav">
+  <button class="tab-btn active" data-tab="brand" onclick="goTab('brand')"><span class="num">1</span>Marca</button>
+  <button class="tab-btn" data-tab="audience" onclick="goTab('audience')"><span class="num">2</span>Audiencia</button>
+  <button class="tab-btn" data-tab="narratives" onclick="goTab('narratives')"><span class="num">3</span>Narrativas</button>
+  <button class="tab-btn" data-tab="prompts" onclick="goTab('prompts')"><span class="num">4</span>Prompts &amp; Evidencia</button>
+</div>
+
+<div class="app">
+
+  <!-- TAB 1: BRAND -->
+  <div class="tab-panel active" id="tab-brand">
+    <div class="intro">
+      <h2>Marca y categoría</h2>
+      <p>Define el producto, la categoría en la que compite y quién más aparece en esa conversación. Esto alimenta todos los prompts que se generarán después.</p>
+    </div>
+    <div class="card">
+      <div class="grid2">
+        <div class="field">
+          <label>Nombre de marca / producto</label>
+          <input type="text" id="brandName" placeholder="Ej. LADX">
+        </div>
+        <div class="field">
+          <label>Categoría <span class="sub">— cómo se nombra el tipo de producto</span></label>
+          <input type="text" id="brandCategory" placeholder="Ej. IXP neutro / fibra wholesale">
+        </div>
+      </div>
+      <div class="field">
+        <label>Descripción en una línea <span class="sub">(opcional)</span></label>
+        <textarea id="brandDescription" placeholder="Qué hace y para quién, en una frase."></textarea>
+      </div>
+      <div class="field">
+        <label>Diferenciadores clave <span class="sub">— escribe uno y presiona Enter</span></label>
+        <div class="chip-input-row">
+          <input type="text" id="diffInput" placeholder="Ej. interconexión neutral">
+          <button class="btn btn-ghost btn-sm" onclick="addChip('differentiators','diffInput')">Añadir</button>
+        </div>
+        <div class="chips" id="diffChips"></div>
+      </div>
+      <div class="field">
+        <label>Competidores / alternativas conocidas <span class="sub">— uno por uno, Enter para añadir</span></label>
+        <div class="chip-input-row">
+          <input type="text" id="compInput" placeholder="Ej. PIT, IX Brasil">
+          <button class="btn btn-ghost btn-sm" onclick="addChip('competitors','compInput')">Añadir</button>
+        </div>
+        <div class="chips" id="compChips"></div>
+      </div>
+      <div class="field">
+        <label>Rangos de presupuesto relevantes <span class="sub">(opcional — alimenta el cluster "Presupuesto")</span></label>
+        <div class="chip-input-row">
+          <input type="text" id="budgetInput" placeholder="Ej. $500/mes">
+          <button class="btn btn-ghost btn-sm" onclick="addChip('budgetTiers','budgetInput')">Añadir</button>
+        </div>
+        <div class="chips" id="budgetChips"></div>
+      </div>
+    </div>
+    <div class="footer-nav">
+      <span></span>
+      <button class="btn btn-accent" onclick="goTab('audience')">Siguiente: Audiencia →</button>
+    </div>
+  </div>
+
+  <!-- TAB 2: AUDIENCE -->
+  <div class="tab-panel" id="tab-audience">
+    <div class="intro">
+      <h2>ICPs y personas</h2>
+      <p>Cada persona genera prompts distintos aunque compren el mismo producto. Define quién pregunta, no solo quién compra. Jerarquía: ICP → Persona → Dolor/Trigger → Prompt.</p>
+    </div>
+    <div class="card">
+      <h3>Añadir persona</h3>
+      <div class="grid3">
+        <div class="field">
+          <label>ICP <span class="sub">la organización</span></label>
+          <input type="text" id="pIcp" placeholder="Ej. Operador de datacenter">
+        </div>
+        <div class="field">
+          <label>Rol / persona <span class="sub">quién pregunta</span></label>
+          <input type="text" id="pRole" placeholder="Ej. Director de Infraestructura">
+        </div>
+        <div class="field">
+          <label>Importancia <span class="sub">1 (baja) – 5 (alta)</span></label>
+          <select id="pImportance">
+            <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Caso de uso / contexto <span class="sub">para clusters "categoría" y "caso de uso"</span></label>
+          <input type="text" id="pUsecase" placeholder="Ej. expansión a Brasil">
+        </div>
+        <div class="field">
+          <label>Trigger / dolor <span class="sub">qué dispara la búsqueda</span></label>
+          <input type="text" id="pTrigger" placeholder="Ej. proveedor actual sin SLA de latencia">
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="btn btn-accent" onclick="addPersona()">+ Añadir persona</button>
+      </div>
+    </div>
+    <div id="personaList"></div>
+    <div class="footer-nav">
+      <button class="btn btn-ghost" onclick="goTab('brand')">← Marca</button>
+      <button class="btn btn-accent" onclick="goTab('narratives')">Siguiente: Narrativas →</button>
+    </div>
+  </div>
+
+  <!-- TAB 3: NARRATIVES -->
+  <div class="tab-panel" id="tab-narratives">
+    <div class="intro">
+      <h2>Narrativas a reforzar</h2>
+      <p>AI no recomienda marcas, recomienda narrativas. Elige 3–5 pilares que puedas defender con evidencia real — no lo que suena bien, sino lo que puedes probar.</p>
+    </div>
+    <div class="card">
+      <h3>Añadir narrativa</h3>
+      <div class="grid2">
+        <div class="field">
+          <label>Narrativa <span class="sub">la asociación que quieres que la IA repita</span></label>
+          <input type="text" id="nName" placeholder="Ej. neutral y libre de conflicto de intereses">
+        </div>
+        <div class="field">
+          <label>Prueba de soporte <span class="sub">por qué es creíble</span></label>
+          <input type="text" id="nProof" placeholder="Ej. no opera red propia, solo interconecta">
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="btn btn-accent" onclick="addNarrative()">+ Añadir narrativa</button>
+      </div>
+    </div>
+    <div id="narrativeList"></div>
+    <div class="footer-nav">
+      <button class="btn btn-ghost" onclick="goTab('audience')">← Audiencia</button>
+      <button class="btn btn-accent" onclick="goTab('prompts')">Siguiente: Generar prompts →</button>
+    </div>
+  </div>
+
+  <!-- TAB 4: PROMPTS -->
+  <div class="tab-panel" id="tab-prompts">
+    <div class="intro">
+      <h2>Prompts, score y evidencia</h2>
+      <p>Genera los prompts por cluster, prioriza por <strong>Impacto × Probabilidad × Importancia</strong>, asigna evidencia y narrativa, y exporta el plan.</p>
+    </div>
+
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="row-actions" style="justify-content:flex-start;margin-bottom:14px;">
+      <button class="btn btn-primary" onclick="generatePrompts()">⚡ Generar prompts automáticos</button>
+      <button class="btn btn-ghost" onclick="toggleManualForm()">+ Prompt manual</button>
+    </div>
+
+    <div class="card manual-form" id="manualPromptForm">
+      <h3>Prompt manual</h3>
+      <div class="grid3">
+        <div class="field">
+          <label>Cluster</label>
+          <select id="mCluster"></select>
+        </div>
+        <div class="field">
+          <label>Persona</label>
+          <select id="mPersona"></select>
+        </div>
+        <div class="field">
+          <label>Importancia heredada</label>
+          <input type="text" id="mImportancePreview" disabled value="—">
+        </div>
+      </div>
+      <div class="field">
+        <label>Texto del prompt</label>
+        <textarea id="mText" placeholder="Escribe el prompt tal como lo escribiría un usuario real en ChatGPT/Perplexity."></textarea>
+      </div>
+      <div class="row-actions">
+        <button class="btn btn-ghost btn-sm" onclick="toggleManualForm()">Cancelar</button>
+        <button class="btn btn-accent btn-sm" onclick="addManualPrompt()">Añadir a la tabla</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-left" id="clusterFilters"></div>
+      <div class="toolbar-right">
+        <button class="btn btn-ghost btn-sm" onclick="sortByScore()">↓ Ordenar por score</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cluster</th>
+            <th style="min-width:240px;">Prompt</th>
+            <th>Persona</th>
+            <th>Imp.</th>
+            <th>Prob.</th>
+            <th>Pers.</th>
+            <th>Score</th>
+            <th>Evidencia</th>
+            <th>Narrativa</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="promptsBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="promptsEmpty" style="display:none;margin-top:14px;">
+      Aún no hay prompts. Completa Marca y Audiencia, luego pulsa "Generar prompts automáticos".
+    </div>
+
+    <div class="row-actions" style="justify-content:flex-start;margin-top:20px;">
+      <button class="btn btn-ghost" onclick="exportCSV()">⬇ Exportar CSV</button>
+      <button class="btn btn-ghost" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="btn btn-ghost" onclick="exportJSON()">⬇ Guardar proyecto (.json)</button>
+      <label class="btn btn-ghost" style="margin:0;">
+        ⬆ Cargar proyecto
+        <input type="file" accept=".json" onchange="importJSON(event)" style="display:none;">
+      </label>
+      <button class="btn btn-danger-ghost" onclick="resetAll()">Borrar todo</button>
+    </div>
+
+    <div class="footer-nav">
+      <button class="btn btn-ghost" onclick="goTab('narratives')">← Narrativas</button>
+      <span></span>
+    </div>
+  </div>
+
+  <footer class="note">Basado en el framework de evidencia y narrativa de Jolly Search — adaptado por SARAUTER para uso recurrente con clientes.</footer>
+</div>
+
+<script>
+/* ===================== STATE ===================== */
+const STORAGE_KEY = 'geo-prompt-engine-v1';
+let state = {
+  lang: 'es',
+  brand: { name:'', category:'', description:'', differentiators:[], competitors:[], budgetTiers:[] },
+  personas: [],
+  narratives: [],
+  prompts: []
+};
+
+const CLUSTERS = {
+  category:    { es:'Categoría',     en:'Category',      color:'#5b6ee1', likelihood:4, evReq:4, evLabel:{es:'2 recomendación + 2 experiencia', en:'2 recommendation + 2 experience'} },
+  alternatives:{ es:'Alternativas',  en:'Alternatives',  color:'#8b6fb3', likelihood:5, evReq:3, evLabel:{es:'2 alternativas + 1 experiencia', en:'2 alternatives + 1 experience'} },
+  comparison:  { es:'Comparación',   en:'Comparison',    color:'#9b59c4', likelihood:5, evReq:3, evLabel:{es:'2 comparación + 1 experiencia', en:'2 comparison + 1 experience'} },
+  experience:  { es:'Experiencia',   en:'Experience',    color:'#2f9e5b', likelihood:4, evReq:3, evLabel:{es:'3 hilos de experiencia', en:'3 experience threads'} },
+  budget:      { es:'Presupuesto',   en:'Budget',        color:'#b9791f', likelihood:3, evReq:2, evLabel:{es:'2 hilos de presupuesto', en:'2 budget threads'} },
+  usecase:     { es:'Caso de uso',   en:'Use-case',      color:'#1d8c9a', likelihood:4, evReq:3, evLabel:{es:'2 caso de uso + 1 experiencia', en:'2 use-case + 1 experience'} },
+  persona:     { es:'Por rol',       en:'Persona-specific', color:'#c4493a', likelihood:3, evReq:2, evLabel:{es:'2 experiencia segmentada por rol', en:'2 role-segmented experience'} }
+};
+
+const T = {
+  es:{ category:(c,u)=>u?`¿Cuáles son las mejores opciones de ${c} para ${u}?`:`¿Cuáles son las mejores opciones de ${c}?`,
+       alternatives:(comp)=>`Alternativas a ${comp}`,
+       comparison:(b,comp)=>`${b} vs ${comp}`,
+       experience:(b)=>`¿Alguien usa ${b}? ¿Vale la pena?`,
+       budget:(c,t)=>`Mejores opciones de ${c} por menos de ${t}`,
+       usecase:(c,u)=>`Mejor opción de ${c} para ${u}`,
+       persona:(role,job)=>`¿Qué usan los ${role} para ${job}?` },
+  en:{ category:(c,u)=>u?`What are the best ${c} options for ${u}?`:`What are the best ${c} options?`,
+       alternatives:(comp)=>`Alternatives to ${comp}`,
+       comparison:(b,comp)=>`${b} vs ${comp}`,
+       experience:(b)=>`Anyone using ${b}? Is it worth it?`,
+       budget:(c,t)=>`Best ${c} options under ${t}`,
+       usecase:(c,u)=>`Best ${c} for ${u}`,
+       persona:(role,job)=>`What do ${role} use for ${job}?` }
+};
+
+let uid = () => Math.random().toString(36).slice(2,9);
+
+/* ===================== PERSISTENCE ===================== */
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function loadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){ try{ state = JSON.parse(raw); }catch(e){} }
+}
+
+/* ===================== TABS ===================== */
+function goTab(name){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelector(`.tab-btn[data-tab="${name}"]`).classList.add('active');
+  if(name==='prompts'){ populateManualSelectors(); renderPrompts(); renderStats(); }
+}
+
+function setLang(l){
+  state.lang = l;
+  document.getElementById('langEs').classList.toggle('active', l==='es');
+  document.getElementById('langEn').classList.toggle('active', l==='en');
+  saveState();
+}
+
+/* ===================== BRAND TAB ===================== */
+function bindBrandInputs(){
+  ['brandName','brandCategory','brandDescription'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', e=>{
+      const key = id.replace('brand','').toLowerCase();
+      state.brand[key] = e.target.value;
+      saveState();
+    });
+  });
+}
+function addChip(field, inputId){
+  const input = document.getElementById(inputId);
+  const val = input.value.trim();
+  if(!val) return;
+  state.brand[field].push(val);
+  input.value='';
+  renderChips();
+  saveState();
+}
+function removeChip(field, idx){
+  state.brand[field].splice(idx,1);
+  renderChips();
+  saveState();
+}
+function renderChips(){
+  const map = {differentiators:'diffChips', competitors:'compChips', budgetTiers:'budgetChips'};
+  Object.entries(map).forEach(([field, elId])=>{
+    const el = document.getElementById(elId);
+    el.innerHTML = state.brand[field].map((v,i)=>
+      `<span class="chip">${escapeHtml(v)}<button onclick="removeChip('${field}',${i})">✕</button></span>`
+    ).join('');
+  });
+}
+/* ===================== AUDIENCE TAB ===================== */
+function addPersona(){
+  const icp = document.getElementById('pIcp').value.trim();
+  const role = document.getElementById('pRole').value.trim();
+  const usecase = document.getElementById('pUsecase').value.trim();
+  const trigger = document.getElementById('pTrigger').value.trim();
+  const importance = parseInt(document.getElementById('pImportance').value);
+  if(!role){ alert(state.lang==='es' ? 'El rol/persona es obligatorio.' : 'Role/persona is required.'); return; }
+  state.personas.push({ id:uid(), icp, role, usecase, trigger, importance });
+  ['pIcp','pRole','pUsecase','pTrigger'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pImportance').value='3';
+  renderPersonas();
+  saveState();
+}
+function removePersona(id){
+  state.personas = state.personas.filter(p=>p.id!==id);
+  state.prompts = state.prompts.filter(pr=>pr.personaId!==id);
+  renderPersonas();
+  saveState();
+}
+function renderPersonas(){
+  const wrap = document.getElementById('personaList');
+  if(state.personas.length===0){
+    wrap.innerHTML = `<div class="empty">${state.lang==='es' ? 'Aún no has añadido ninguna persona.' : 'No personas added yet.'}</div>`;
+    return;
+  }
+  wrap.innerHTML = state.personas.map(p=>`
+    <div class="entity-card">
+      <div>
+        <div><span class="tag">${escapeHtml(p.icp||'ICP')}</span><strong>${escapeHtml(p.role)}</strong>
+          <span class="importance">${[1,2,3,4,5].map(n=>`<span class="dot ${n<=p.importance?'on':''}"></span>`).join('')}</span>
+        </div>
+        <div class="meta">
+          ${p.usecase ? (state.lang==='es'?'Caso de uso: ':'Use-case: ')+escapeHtml(p.usecase)+' · ' : ''}
+          ${p.trigger ? (state.lang==='es'?'Trigger: ':'Trigger: ')+escapeHtml(p.trigger) : ''}
+        </div>
+      </div>
+      <button class="del" onclick="removePersona('${p.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+/* ===================== NARRATIVES TAB ===================== */
+function addNarrative(){
+  const name = document.getElementById('nName').value.trim();
+  const proof = document.getElementById('nProof').value.trim();
+  if(!name) return;
+  if(state.narratives.length>=5){
+    alert(state.lang==='es' ? 'Máximo 5 narrativas — más de eso diluye el mensaje.' : 'Max 5 narratives — more than that dilutes the message.');
+    return;
+  }
+  state.narratives.push({ id:uid(), name, proof });
+  document.getElementById('nName').value=''; document.getElementById('nProof').value='';
+  renderNarratives();
+  saveState();
+}
+function removeNarrative(id){
+  state.narratives = state.narratives.filter(n=>n.id!==id);
+  state.prompts.forEach(p=>{ if(p.narrativeId===id) p.narrativeId=''; });
+  renderNarratives();
+  saveState();
+}
+function renderNarratives(){
+  const wrap = document.getElementById('narrativeList');
+  if(state.narratives.length===0){
+    wrap.innerHTML = `<div class="empty">${state.lang==='es' ? 'Aún no has definido narrativas.' : 'No narratives yet.'}</div>`;
+    return;
+  }
+  wrap.innerHTML = state.narratives.map(n=>`
+    <div class="entity-card">
+      <div>
+        <strong>${escapeHtml(n.name)}</strong>
+        <div class="meta">${escapeHtml(n.proof||'')}</div>
+      </div>
+      <button class="del" onclick="removeNarrative('${n.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+/* ===================== PROMPT GENERATION ===================== */
+function generatePrompts(){
+  if(!state.brand.name || !state.brand.category){
+    alert(state.lang==='es' ? 'Completa al menos nombre de marca y categoría en la pestaña Marca.' : 'Fill in at least brand name and category in the Brand tab.');
+    goTab('brand'); return;
+  }
+  if(state.personas.length===0){
+    alert(state.lang==='es' ? 'Añade al menos una persona en la pestaña Audiencia.' : 'Add at least one persona in the Audience tab.');
+    goTab('audience'); return;
+  }
+  if(state.prompts.some(p=>p.auto) && !confirm(state.lang==='es' ? 'Esto reemplazará los prompts generados automáticamente (los manuales se conservan). ¿Continuar?' : 'This will replace auto-generated prompts (manual ones are kept). Continue?')){
+    return;
+  }
+  state.prompts = state.prompts.filter(p=>!p.auto);
+  const b = state.brand;
+  const lang = state.lang;
+  const tpl = T[lang];
+
+  state.personas.forEach(p=>{
+    push('category', tpl.category(b.category, p.usecase), p);
+    push('experience', tpl.experience(b.name), p);
+    if(p.usecase) push('usecase', tpl.usecase(b.category, p.usecase), p);
+    if(p.role) push('persona', tpl.persona(p.role, p.trigger || p.usecase || b.category), p);
+    (b.competitors.length? b.competitors : ['[competidor]']).forEach(comp=>{
+      push('alternatives', tpl.alternatives(comp), p);
+      push('comparison', tpl.comparison(b.name, comp), p);
+    });
+    (b.budgetTiers.length? b.budgetTiers : null) && b.budgetTiers.forEach(t=>{
+      push('budget', tpl.budget(b.category, t), p);
+    });
+  });
+
+  function push(cluster, text, persona){
+    state.prompts.push({
+      id: uid(), cluster, text, personaId: persona.id,
+      impact: 3, likelihood: CLUSTERS[cluster].likelihood, personaImportance: persona.importance,
+      evidenceBuilt: 0, narrativeId: '', auto: true
+    });
+  }
+  saveState();
+  renderPrompts(); renderStats();
+}
+
+function toggleManualForm(){
+  populateManualSelectors();
+  document.getElementById('manualPromptForm').classList.toggle('open');
+}
+function populateManualSelectors(){
+  const cSel = document.getElementById('mCluster');
+  cSel.innerHTML = Object.entries(CLUSTERS).map(([k,v])=>`<option value="${k}">${v[state.lang]}</option>`).join('');
+  const pSel = document.getElementById('mPersona');
+  pSel.innerHTML = state.personas.map(p=>`<option value="${p.id}">${escapeHtml(p.role)} (${escapeHtml(p.icp||'—')})</option>`).join('');
+  updateImportancePreview();
+  pSel.onchange = updateImportancePreview;
+}
+function updateImportancePreview(){
+  const pSel = document.getElementById('mPersona');
+  const persona = state.personas.find(p=>p.id===pSel.value);
+  document.getElementById('mImportancePreview').value = persona ? persona.importance : '—';
+}
+function addManualPrompt(){
+  const cluster = document.getElementById('mCluster').value;
+  const personaId = document.getElementById('mPersona').value;
+  const text = document.getElementById('mText').value.trim();
+  if(!text || !personaId){ alert(state.lang==='es' ? 'Falta el texto del prompt o no hay personas creadas.' : 'Missing prompt text or no personas created.'); return; }
+  const persona = state.personas.find(p=>p.id===personaId);
+  state.prompts.push({
+    id: uid(), cluster, text, personaId,
+    impact: 3, likelihood: CLUSTERS[cluster].likelihood, personaImportance: persona.importance,
+    evidenceBuilt: 0, narrativeId: '', auto: false
+  });
+  document.getElementById('mText').value='';
+  document.getElementById('manualPromptForm').classList.remove('open');
+  saveState(); renderPrompts(); renderStats();
+}
+function removePrompt(id){
+  state.prompts = state.prompts.filter(p=>p.id!==id);
+  saveState(); renderPrompts(); renderStats();
+}
+
+/* ===================== SCORING / RENDER ===================== */
+function score(p){ return p.impact * p.likelihood * p.personaImportance; }
+function tier(s){
+  if(s>=75) return {label: state.lang==='es'?'Alta':'High', cls:'tier-alta'};
+  if(s>=30) return {label: state.lang==='es'?'Media':'Medium', cls:'tier-media'};
+  return {label: state.lang==='es'?'Baja':'Low', cls:'tier-baja'};
+}
+
+let activeClusterFilter = null;
+function renderClusterFilters(){
+  const wrap = document.getElementById('clusterFilters');
+  const all = `<button class="filter-chip ${activeClusterFilter===null?'active':''}" onclick="setClusterFilter(null)">${state.lang==='es'?'Todos':'All'}</button>`;
+  const chips = Object.entries(CLUSTERS).map(([k,v])=>
+    `<button class="filter-chip ${activeClusterFilter===k?'active':''}" onclick="setClusterFilter('${k}')">${v[state.lang]}</button>`
+  ).join('');
+  wrap.innerHTML = all + chips;
+}
+function setClusterFilter(k){ activeClusterFilter = k; renderClusterFilters(); renderPrompts(); }
+
+let sortDesc = true;
+function sortByScore(){
+  sortDesc = !sortDesc;
+  state.prompts.sort((a,b)=> sortDesc ? score(b)-score(a) : score(a)-score(b));
+  saveState(); renderPrompts();
+}
+
+function renderPrompts(){
+  renderClusterFilters();
+  const body = document.getElementById('promptsBody');
+  const empty = document.getElementById('promptsEmpty');
+  let list = state.prompts;
+  if(activeClusterFilter) list = list.filter(p=>p.cluster===activeClusterFilter);
+
+  if(state.prompts.length===0){ body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  body.innerHTML = list.map(p=>{
+    const persona = state.personas.find(per=>per.id===p.personaId);
+    const c = CLUSTERS[p.cluster];
+    const s = score(p);
+    const tr = tier(s);
+    const evReq = c.evReq;
+    const complete = p.evidenceBuilt >= evReq;
+    const narrativeOpts = `<option value="">—</option>` + state.narratives.map(n=>`<option value="${n.id}" ${p.narrativeId===n.id?'selected':''}>${escapeHtml(n.name)}</option>`).join('');
+    return `
+    <tr>
+      <td><span class="cluster-badge" style="background:${c.color}">${c[state.lang]}</span></td>
+      <td class="prompt-cell"><textarea onchange="updatePrompt('${p.id}','text',this.value)">${escapeHtml(p.text)}</textarea></td>
+      <td>${persona ? escapeHtml(persona.role) : '—'}</td>
+      <td><select class="mini-select" onchange="updatePrompt('${p.id}','impact',parseInt(this.value))">${[1,2,3,4,5].map(n=>`<option value="${n}" ${p.impact===n?'selected':''}>${n}</option>`).join('')}</select></td>
+      <td><select class="mini-select" onchange="updatePrompt('${p.id}','likelihood',parseInt(this.value))">${[1,2,3,4,5].map(n=>`<option value="${n}" ${p.likelihood===n?'selected':''}>${n}</option>`).join('')}</select></td>
+      <td><select class="mini-select" onchange="updatePrompt('${p.id}','personaImportance',parseInt(this.value))">${[1,2,3,4,5].map(n=>`<option value="${n}" ${p.personaImportance===n?'selected':''}>${n}</option>`).join('')}</select></td>
+      <td><span class="score-badge">${s}</span><span class="score-tier ${tr.cls}">${tr.label}</span></td>
+      <td>
+        <div class="evidence-cell">
+          <input type="number" min="0" value="${p.evidenceBuilt}" onchange="updatePrompt('${p.id}','evidenceBuilt',parseInt(this.value)||0)">
+          <span>/ ${evReq}</span>
+        </div>
+        <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">${c.evLabel[state.lang]}</div>
+      </td>
+      <td><select class="narrative-select" onchange="updatePrompt('${p.id}','narrativeId',this.value)">${narrativeOpts}</select></td>
+      <td><span class="status-pill ${complete?'status-complete':'status-pending'}">${complete ? (state.lang==='es'?'Completo':'Complete') : (state.lang==='es'?'Pendiente':'Pending')}</span></td>
+      <td><button class="del-row" onclick="removePrompt('${p.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+function updatePrompt(id, field, value){
+  const p = state.prompts.find(pr=>pr.id===id);
+  if(!p) return;
+  p[field] = value;
+  saveState();
+  renderPrompts(); renderStats();
+}
+
+function renderStats(){
+  const total = state.prompts.length;
+  const high = state.prompts.filter(p=>score(p)>=75).length;
+  const complete = state.prompts.filter(p=>p.evidenceBuilt >= CLUSTERS[p.cluster].evReq).length;
+  const avg = total ? Math.round(state.prompts.reduce((a,p)=>a+score(p),0)/total) : 0;
+  const wrap = document.getElementById('statsRow');
+  const L = state.lang==='es';
+  wrap.innerHTML = `
+    <div class="stat"><div class="v">${total}</div><div class="l">${L?'Prompts totales':'Total prompts'}</div></div>
+    <div class="stat"><div class="v">${high}</div><div class="l">${L?'Prioridad alta':'High priority'}</div></div>
+    <div class="stat"><div class="v">${complete}</div><div class="l">${L?'Con evidencia completa':'Evidence complete'}</div></div>
+    <div class="stat"><div class="v">${avg}</div><div class="l">${L?'Score promedio':'Avg score'}</div></div>
+    <div class="stat"><div class="v">${state.narratives.length}</div><div class="l">${L?'Narrativas activas':'Active narratives'}</div></div>
+  `;
+}
+
+/* ===================== EXPORT / IMPORT ===================== */
+function exportCSV(){
+  const headers = ['Cluster','Prompt','Persona','ICP','Impacto','Probabilidad','Importancia','Score','Evidencia requerida','Evidencia construida','Narrativa','Estado'];
+  const rows = state.prompts.map(p=>{
+    const persona = state.personas.find(per=>per.id===p.personaId) || {};
+    const narrative = state.narratives.find(n=>n.id===p.narrativeId);
+    const evReq = CLUSTERS[p.cluster].evReq;
+    const complete = p.evidenceBuilt >= evReq;
+    return [
+      CLUSTERS[p.cluster][state.lang], p.text, persona.role||'', persona.icp||'',
+      p.impact, p.likelihood, p.personaImportance, score(p), evReq, p.evidenceBuilt,
+      narrative ? narrative.name : '', complete ? 'Completo' : 'Pendiente'
+    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  downloadFile(csv, `geo-prompts-${slug(state.brand.name||'proyecto')}.csv`, 'text/csv');
+}
+function exportJSON(){
+  downloadFile(JSON.stringify(state, null, 2), `geo-project-${slug(state.brand.name||'proyecto')}.json`, 'application/json');
+}
+function importJSON(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      state = JSON.parse(e.target.result);
+      saveState();
+      hydrateAllInputs();
+      alert(state.lang==='es' ? 'Proyecto cargado.' : 'Project loaded.');
+    }catch(err){ alert('Archivo inválido.'); }
+  };
+  reader.readAsText(file);
+}
+function resetAll(){
+  if(!confirm(state.lang==='es' ? '¿Borrar todos los datos del proyecto actual?' : 'Clear all data for the current project?')) return;
+  state = { lang: state.lang, brand:{name:'',category:'',description:'',differentiators:[],competitors:[],budgetTiers:[]}, personas:[], narratives:[], prompts:[] };
+  saveState();
+  hydrateAllInputs();
+}
+function downloadFile(content, filename, type){
+  const blob = new Blob([content], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ===================== UTIL ===================== */
+function escapeHtml(str){
+  return String(str||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function slug(s){ return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'proyecto'; }
+
+function hydrateAllInputs(){
+  document.getElementById('brandName').value = state.brand.name;
+  document.getElementById('brandCategory').value = state.brand.category;
+  document.getElementById('brandDescription').value = state.brand.description;
+  document.getElementById('langEs').classList.toggle('active', state.lang==='es');
+  document.getElementById('langEn').classList.toggle('active', state.lang==='en');
+  renderChips();
+  renderPersonas();
+  renderNarratives();
+  renderPrompts();
+  renderStats();
+}
+
+/* ===================== INIT ===================== */
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadState();
+  bindBrandInputs();
+  hydrateAllInputs();
+});
+</script>
+</body>
+</html>
